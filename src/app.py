@@ -1,15 +1,54 @@
-import os
-from sqlalchemy import create_engine
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
 from dotenv import load_dotenv
-
-# load the .env file variables
 load_dotenv()
+import os
+import matplotlib.pyplot as plt
 
-# 1) Connect to the database here using the SQLAlchemy's create_engine function
+#Spotify Api
+client_id = os.environ.get("CLIENT_ID")
+client_secret = os.environ.get("CLIENT_SECRET")
 
-# 2) Execute the SQL sentences to create your tables using the SQLAlchemy's execute function
+wknd_uri = "spotify:artist:1Xyo4u8uXC1ZmMpatF05PJ"
 
-# 3) Execute the SQL sentences to insert your data using the SQLAlchemy's execute function
+client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+spoti = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
-# 4) Use pandas to print one of the tables as dataframes using read_sql function
+wknd_info = spoti.artist(wknd_uri)
+
+top_tracks = spoti.artist_top_tracks(wknd_uri)
+
+print(f'Canciones populares de {wknd_info["name"]}:')
+
+name = []
+minutes = []
+popularity = []
+
+
+for track in top_tracks['tracks']:
+    name.append(track['name'])
+    duracion_en_minutos = round(track['duration_ms']/ 60000, 2)
+    minutes.append(duracion_en_minutos)
+    popularity.append(track['popularity'])
+    print('track     : ' + track['name'])
+    print('duration  : ' + str(duracion_en_minutos))
+    print('popularity: ' + str(track['popularity']))
+    print('----------------------------------')
+
+
+
+#Crear dataframe
+wknd_ = pd.DataFrame({'Track': name, 'Minutes': minutes, 'popularity': popularity})
+wknd_.sort_values(by='popularity',  inplace = True,  ascending=False)
+wknd_.head(3)
+
+
+#Gráfica
+plt.figure(figsize=(8, 5))
+plt.scatter(wknd_['Minutes'], wknd_['popularity'], alpha=0.5)
+plt.title('Relationship between Duration and Popularity of Songs')
+plt.xlabel('Minutes')
+plt.ylabel('Popularity')
+plt.grid(True, color = 'gray', linewidth=0.8)
+plt.show()
